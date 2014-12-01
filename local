@@ -6,3 +6,6 @@
 
 [memcachedservers]
 192.168.33.15
+
+[local]
+localhost

@@ -1,7 +1,9 @@
 ---
 
-- name: Provision a {{ application_name }} server
-  hosts: all
+- name: get latest on {{ application_name }} server
+- hosts: localhost
+  connection: local
+  gather_facts: Falsec
   sudo: yes
   sudo_user: root
   remote_user: root
