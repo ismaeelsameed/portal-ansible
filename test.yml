@@ -1,38 +1,41 @@
-- hosts: localhost
-  connection: local
-  gather_facts: False
+---
+- hosts: 127.0.0.1
   vars:
-    ec2_access_key: "AKIAIMOZ2LXMPXWPOREQ "
-    ec2_secret_key: "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"
-    keypair: "sameedo"
-    instance_type: "t2.micro"
-    image: "ami-097c3839"
-    group: "SSH-ehsibha"
-    region: "Oregon"
-    zone: "us-west-2b"
+    - virtualenv: /home/sameedo/.virtualenvs/portal
+    - git_repo: ssh://git@github.com:doroob-edx/portal.git
+    - git_dest: /home/sameedo/portal
+    - requirements_path: /home/sameedo/portal/requirements.txt
+    - app_path: /home/sameedo/portal
+    - settings_path: molPortal.settings_dev
+  remote_user: sameedo
   tasks:
-    - name: make one instance
-      ec2: image={{ image }}
-           instance_type={{ instance_type }}
-           aws_access_key={{ ec2_access_key }}
-           aws_secret_key={{ ec2_secret_key }}
-           keypair={{ keypair }}
-           instance_tags='{"foo":"bar"}'
-           region={{ region }}
-           group={{ group }}
-           wait=true
-      register: ec2_info
-
-    - debug: var=ec2_info
-    - debug: var=item
-      with_items: ec2_info.instance_ids
-
-    - add_host: hostname={{ item.public_ip }} groupname=ec2hosts
-      with_items: ec2_info.instances
-
-    - name: wait for instances to listen on port:22
-      wait_for:
-        state=started
-        host={{ item.public_dns_name }}
-        port=22
-      with_items: ec2_info.instances
+    - name: test server connection
+      ping:
+      remote_user: sameedo
+    - name: pull latest code
+      git: repo={{ git_repo }}
+        dest={{ git_dest }}
+        accept_hostkey=True
+        update=False
+    - name: Install packages required by the Django app inside virtualenv
+      pip: virtualenv={{ virtualenv }} requirements={{ requirements_path }}
+    - name: Run the Django syncdb command
+      django_manage:
+        command: syncdb
+        app_path: "{{ app_path }}"
+        virtualenv: "{{ virtualenv }}"
+        settings: "{{ settings_path }}"
+    - name: Run Django South migrations
+      django_manage:
+        command: migrate
+        app_path: "{{ app_path }}"
+        virtualenv: "{{ virtualenv }}"
+        settings: "{{ settings_path }}"
+    - name: Run Django collectstatic
+      django_manage:
+        command: collectstatic
+        app_path: "{{ app_path }}"
+        virtualenv: "{{ virtualenv }}"
+        settings: "{{ settings_path }}"
+#    - name: Restart Supervisor
+#      supervisorctl: name=doroob state=restarted

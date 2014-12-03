@@ -1,11 +1,2 @@
-[webservers]
-192.168.33.15
-
-[dbservers]
-192.168.33.15
-
-[memcachedservers]
-192.168.33.15
-
 [local]
 localhost
